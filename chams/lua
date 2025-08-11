@@ -1,0 +1,30 @@
+-- Simple Chams script for Roblox (ESP-like highlight for enemies)
+-- Place in LocalScript under StarterPlayerScripts or similar
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local function addChams(char)
+    if char and char ~= LocalPlayer.Character then
+        local highlight = Instance.new("Highlight")
+        highlight.Adornee = char
+        highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Red fill
+        highlight.OutlineColor = Color3.fromRGB(0, 255, 0) -- Green outline
+        highlight.FillTransparency = 0.5
+        highlight.OutlineTransparency = 0
+        highlight.Parent = char
+    end
+end
+
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(addChams)
+end)
+
+for _, player in ipairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+        player.CharacterAdded:Connect(addChams)
+        if player.Character then
+            addChams(player.Character)
+        end
+    end
+end
