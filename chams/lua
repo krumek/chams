@@ -1,30 +1,206 @@
--- Simple Chams script for Roblox (ESP-like highlight for enemies)
--- Place in LocalScript under StarterPlayerScripts or similar
+-- Improved Chams with GUI (Right Shift toggle) and Bunnyhop
+-- LocalScript in StarterPlayerScripts
 
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
+-- GUI Setup
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ChamsConfig"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.Enabled = true
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 200, 0, 300)
+Frame.Position = UDim2.new(0.5, -100, 0.5, -150)
+Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+Frame.Parent = ScreenGui
+
+local Title = Instance.new("TextLabel")
+Title.Text = "Chams Config"
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Parent = Frame
+
+-- Color and Transparency Inputs
+local FillColorLabel = Instance.new("TextLabel")
+FillColorLabel.Text = "Fill Color (R,G,B)"
+FillColorLabel.Size = UDim2.new(1, 0, 0, 20)
+FillColorLabel.Position = UDim2.new(0, 0, 0, 30)
+FillColorLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+FillColorLabel.Parent = Frame
+
+local FillColorInput = Instance.new("TextBox")
+FillColorInput.Size = UDim2.new(1, 0, 0, 20)
+FillColorInput.Position = UDim2.new(0, 0, 0, 50)
+FillColorInput.Text = "255,0,0"
+FillColorInput.Parent = Frame
+
+local OutlineColorLabel = Instance.new("TextLabel")
+OutlineColorLabel.Text = "Outline Color (R,G,B)"
+OutlineColorLabel.Size = UDim2.new(1, 0, 0, 20)
+OutlineColorLabel.Position = UDim2.new(0, 0, 0, 70)
+OutlineColorLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+OutlineColorLabel.Parent = Frame
+
+local OutlineColorInput = Instance.new("TextBox")
+OutlineColorInput.Size = UDim2.new(1, 0, 0, 20)
+OutlineColorInput.Position = UDim2.new(0, 0, 0, 90)
+OutlineColorInput.Text = "0,255,0"
+OutlineColorInput.Parent = Frame
+
+local FillTransLabel = Instance.new("TextLabel")
+FillTransLabel.Text = "Fill Transparency (0-1)"
+FillTransLabel.Size = UDim2.new(1, 0, 0, 20)
+FillTransLabel.Position = UDim2.new(0, 0, 0, 110)
+FillTransLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+FillTransLabel.Parent = Frame
+
+local FillTransInput = Instance.new("TextBox")
+FillTransInput.Size = UDim2.new(1, 0, 0, 20)
+FillTransInput.Position = UDim2.new(0, 0, 0, 130)
+FillTransInput.Text = "0.5"
+FillTransInput.Parent = Frame
+
+local OutlineTransLabel = Instance.new("TextLabel")
+OutlineTransLabel.Text = "Outline Transparency (0-1)"
+OutlineTransLabel.Size = UDim2.new(1, 0, 0, 20)
+OutlineTransLabel.Position = UDim2.new(0, 0, 0, 150)
+OutlineTransLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+OutlineTransLabel.Parent = Frame
+
+local OutlineTransInput = Instance.new("TextBox")
+OutlineTransInput.Size = UDim2.new(1, 0, 0, 20)
+OutlineTransInput.Position = UDim2.new(0, 0, 0, 170)
+OutlineTransInput.Text = "0"
+OutlineTransInput.Parent = Frame
+
+-- Bunnyhop Toggle
+local BunnyhopToggle = Instance.new("TextButton")
+BunnyhopToggle.Text = "Bunnyhop: Off"
+BunnyhopToggle.Size = UDim2.new(1, 0, 0, 30)
+BunnyhopToggle.Position = UDim2.new(0, 0, 0, 190)
+BunnyhopToggle.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+BunnyhopToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+BunnyhopToggle.Parent = Frame
+local bhEnabled = false
+
+BunnyhopToggle.MouseButton1Click:Connect(function()
+    bhEnabled = not bhEnabled
+    BunnyhopToggle.Text = "Bunnyhop: " .. (bhEnabled and "On" or "Off")
+end)
+
+-- Apply Button
+local ApplyButton = Instance.new("TextButton")
+ApplyButton.Text = "Apply"
+ApplyButton.Size = UDim2.new(1, 0, 0, 30)
+ApplyButton.Position = UDim2.new(0, 0, 0, 220)
+ApplyButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ApplyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ApplyButton.Parent = Frame
+
+-- Chams Logic
+local chamsSettings = {
+    FillColor = Color3.fromRGB(255, 0, 0),
+    OutlineColor = Color3.fromRGB(0, 255, 0),
+    FillTransparency = 0.5,
+    OutlineTransparency = 0
+}
+
+local function parseColor(text)
+    local r, g, b = text:match("(%d+),(%d+),(%d+)")
+    r, g, b = tonumber(r), tonumber(g), tonumber(b)
+    if r and g and b and r >= 0 and r <= 255 and g >= 0 and g <= 255 and b >= 0 and b <= 255 then
+        return Color3.fromRGB(r, g, b)
+    end
+    return chamsSettings.FillColor -- Fallback
+end
+
+local function parseTransparency(text)
+    local num = tonumber(text)
+    if num and num >= 0 and num <= 1 then
+        return num
+    end
+    return chamsSettings.FillTransparency -- Fallback
+end
+
 local function addChams(char)
-    if char and char ~= LocalPlayer.Character then
+    if char and char ~= LocalPlayer.Character and char:FindFirstChild("Humanoid") then
+        local existing = char:FindFirstChildOfClass("Highlight")
+        if existing then existing:Destroy() end
         local highlight = Instance.new("Highlight")
         highlight.Adornee = char
-        highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Red fill
-        highlight.OutlineColor = Color3.fromRGB(0, 255, 0) -- Green outline
-        highlight.FillTransparency = 0.5
-        highlight.OutlineTransparency = 0
+        highlight.FillColor = chamsSettings.FillColor
+        highlight.OutlineColor = chamsSettings.OutlineColor
+        highlight.FillTransparency = chamsSettings.FillTransparency
+        highlight.OutlineTransparency = chamsSettings.OutlineTransparency
         highlight.Parent = char
+        -- print("Chams applied to", char.Name)
     end
 end
 
-Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(addChams)
-end)
-
-for _, player in ipairs(Players:GetPlayers()) do
-    if player ~= LocalPlayer then
-        player.CharacterAdded:Connect(addChams)
-        if player.Character then
+local function updateAllChams()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
             addChams(player.Character)
         end
     end
 end
+
+ApplyButton.MouseButton1Click:Connect(function()
+    chamsSettings.FillColor = parseColor(FillColorInput.Text)
+    chamsSettings.OutlineColor = parseColor(OutlineColorInput.Text)
+    chamsSettings.FillTransparency = parseTransparency(FillTransInput.Text)
+    chamsSettings.OutlineTransparency = parseTransparency(OutlineTransInput.Text)
+    updateAllChams()
+    -- print("Settings applied")
+end)
+
+-- Player and Character Handling
+Players.PlayerAdded:Connect(function(player)
+    if player ~= LocalPlayer then
+        player.CharacterAdded:Connect(function(char)
+            addChams(char)
+            local humanoid = char:WaitForChild("Humanoid", 5)
+            if humanoid then
+                humanoid.Died:Connect(function()
+                    task.wait(Players.RespawnTime + 0.1) -- Wait for respawn
+                    if player.Character then
+                        addChams(player.Character)
+                    end
+                end)
+            end
+        end)
+    end
+end)
+
+for _, player in ipairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+        if player.Character then
+            addChams(player.Character)
+        end
+        player.CharacterAdded:Connect(addChams)
+    end
+end
+
+-- Bunnyhop
+RunService.RenderStepped:Connect(function()
+    if bhEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        local humanoid = LocalPlayer.Character.Humanoid
+        if humanoid.FloorMaterial ~= Enum.Material.Air and UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            humanoid.Jump = true
+        end
+    end
+end)
+
+-- Toggle GUI with Right Shift
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.RightShift then
+        ScreenGui.Enabled = not ScreenGui.Enabled
+        -- print("GUI toggled:", ScreenGui.Enabled)
+    end
+end)
