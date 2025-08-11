@@ -1,12 +1,15 @@
--- Improved Chams with GUI (Right Shift toggle) and Bunnyhop
+```lua
+-- Enhanced Chams, Movable GUI (Right Shift toggle), Binds, Aimbot (with checks), Triggerbot on Chams
 -- LocalScript in StarterPlayerScripts
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local Mouse = LocalPlayer:GetMouse()
 
--- GUI Setup
+-- GUI Setup (Movable)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ChamsConfig"
 ScreenGui.ResetOnSpawn = false
@@ -14,10 +17,12 @@ ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.Enabled = true
 
 local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 200, 0, 300)
-Frame.Position = UDim2.new(0.5, -100, 0.5, -150)
+Frame.Size = UDim2.new(0, 200, 0, 400)
+Frame.Position = UDim2.new(0.5, -100, 0.5, -200)
 Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 Frame.Parent = ScreenGui
+Frame.Active = true
+Frame.Draggable = true  -- Make GUI movable
 
 local Title = Instance.new("TextLabel")
 Title.Text = "Chams Config"
@@ -26,7 +31,7 @@ Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Parent = Frame
 
--- Color and Transparency Inputs
+-- Inputs (Chams)
 local FillColorLabel = Instance.new("TextLabel")
 FillColorLabel.Text = "Fill Color (R,G,B)"
 FillColorLabel.Size = UDim2.new(1, 0, 0, 20)
@@ -81,7 +86,7 @@ OutlineTransInput.Parent = Frame
 
 -- Bunnyhop Toggle
 local BunnyhopToggle = Instance.new("TextButton")
-BunnyhopToggle.Text = "Bunnyhop: Off"
+BunnyhopToggle.Text = "Bunnyhop: Off (F1)"
 BunnyhopToggle.Size = UDim2.new(1, 0, 0, 30)
 BunnyhopToggle.Position = UDim2.new(0, 0, 0, 190)
 BunnyhopToggle.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -91,14 +96,99 @@ local bhEnabled = false
 
 BunnyhopToggle.MouseButton1Click:Connect(function()
     bhEnabled = not bhEnabled
-    BunnyhopToggle.Text = "Bunnyhop: " .. (bhEnabled and "On" or "Off")
+    BunnyhopToggle.Text = "Bunnyhop: " .. (bhEnabled and "On" or "Off") .. " (F1)"
 end)
 
--- Apply Button
+-- Aimbot Toggles
+local AimbotToggle = Instance.new("TextButton")
+AimbotToggle.Text = "Aimbot: Off (F2)"
+AimbotToggle.Size = UDim2.new(1, 0, 0, 30)
+AimbotToggle.Position = UDim2.new(0, 0, 0, 220)
+AimbotToggle.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+AimbotToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+AimbotToggle.Parent = Frame
+local aimbotEnabled = false
+
+AimbotToggle.MouseButton1Click:Connect(function()
+    aimbotEnabled = not aimbotEnabled
+    AimbotToggle.Text = "Aimbot: " .. (aimbotEnabled and "On" or "Off") .. " (F2)"
+end)
+
+local VisibleCheckToggle = Instance.new("TextButton")
+VisibleCheckToggle.Text = "Visible Check: On"
+VisibleCheckToggle.Size = UDim2.new(1, 0, 0, 20)
+VisibleCheckToggle.Position = UDim2.new(0, 0, 0, 250)
+VisibleCheckToggle.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+VisibleCheckToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+VisibleCheckToggle.Parent = Frame
+local visibleCheck = true
+
+VisibleCheckToggle.MouseButton1Click:Connect(function()
+    visibleCheck = not visibleCheck
+    VisibleCheckToggle.Text = "Visible Check: " .. (visibleCheck and "On" or "Off")
+end)
+
+local FireCheckToggle = Instance.new("TextButton")
+FireCheckToggle.Text = "Fire Check: On"  -- Assume checks if tool is equipped
+FireCheckToggle.Size = UDim2.new(1, 0, 0, 20)
+FireCheckToggle.Position = UDim2.new(0, 0, 0, 270)
+FireCheckToggle.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+FireCheckToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+FireCheckToggle.Parent = Frame
+local fireCheck = true
+
+FireCheckToggle.MouseButton1Click:Connect(function()
+    fireCheck = not fireCheck
+    FireCheckToggle.Text = "Fire Check: " .. (fireCheck and "On" or "Off")
+end)
+
+local SmoothLabel = Instance.new("TextLabel")
+SmoothLabel.Text = "Smooth Factor (0-1)"
+SmoothLabel.Size = UDim2.new(1, 0, 0, 20)
+SmoothLabel.Position = UDim2.new(0, 0, 0, 290)
+SmoothLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+SmoothLabel.Parent = Frame
+
+local SmoothInput = Instance.new("TextBox")
+SmoothInput.Size = UDim2.new(1, 0, 0, 20)
+SmoothInput.Position = UDim2.new(0, 0, 0, 310)
+SmoothInput.Text = "0.5"
+SmoothInput.Parent = Frame
+
+local SmoothCheckToggle = Instance.new("TextButton")
+SmoothCheckToggle.Text = "Smooth: On"
+SmoothCheckToggle.Size = UDim2.new(1, 0, 0, 20)
+SmoothCheckToggle.Position = UDim2.new(0, 0, 0, 330)
+SmoothCheckToggle.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+SmoothCheckToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+SmoothCheckToggle.Parent = Frame
+local smoothEnabled = true
+
+SmoothCheckToggle.MouseButton1Click:Connect(function()
+    smoothEnabled = not smoothEnabled
+    SmoothCheckToggle.Text = "Smooth: " .. (smoothEnabled and "On" or "Off")
+end)
+
+-- Triggerbot Toggle
+local TriggerbotToggle = Instance.new("TextButton")
+TriggerbotToggle.Text = "Triggerbot: Off (F3)"
+TriggerbotToggle.Size = UDim2.new(1, 0, 0, 30)
+TriggerbotToggle.Position = UDim2.new(0, 0, 0, 350)
+TriggerbotToggle.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+TriggerbotToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+TriggerbotToggle.Parent = Frame
+local triggerbotEnabled = false
+
+TriggerbotToggle.MouseButton1Click:Connect(function()
+    triggerbotEnabled = not triggerbotEnabled
+    TriggerbotToggle.Text = "Triggerbot: " .. (triggerbotEnabled and "On" or "Off") .. " (F3)"
+end)
+
+-- Apply Button for Chams
 local ApplyButton = Instance.new("TextButton")
-ApplyButton.Text = "Apply"
+ApplyButton.Text = "Apply Chams"
 ApplyButton.Size = UDim2.new(1, 0, 0, 30)
-ApplyButton.Position = UDim2.new(0, 0, 0, 220)
+ApplyButton.Position = UDim2.new(0, 0, 0, 380)
 ApplyButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 ApplyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 ApplyButton.Parent = Frame
@@ -117,7 +207,7 @@ local function parseColor(text)
     if r and g and b and r >= 0 and r <= 255 and g >= 0 and g <= 255 and b >= 0 and b <= 255 then
         return Color3.fromRGB(r, g, b)
     end
-    return chamsSettings.FillColor -- Fallback
+    return Color3.fromRGB(255, 0, 0)  -- Fallback
 end
 
 local function parseTransparency(text)
@@ -125,7 +215,7 @@ local function parseTransparency(text)
     if num and num >= 0 and num <= 1 then
         return num
     end
-    return chamsSettings.FillTransparency -- Fallback
+    return 0.5  -- Fallback
 end
 
 local function addChams(char)
@@ -139,7 +229,6 @@ local function addChams(char)
         highlight.FillTransparency = chamsSettings.FillTransparency
         highlight.OutlineTransparency = chamsSettings.OutlineTransparency
         highlight.Parent = char
-        -- print("Chams applied to", char.Name)
     end
 end
 
@@ -157,10 +246,9 @@ ApplyButton.MouseButton1Click:Connect(function()
     chamsSettings.FillTransparency = parseTransparency(FillTransInput.Text)
     chamsSettings.OutlineTransparency = parseTransparency(OutlineTransInput.Text)
     updateAllChams()
-    -- print("Settings applied")
 end)
 
--- Player and Character Handling
+-- Player Handling (Respawn Fix)
 Players.PlayerAdded:Connect(function(player)
     if player ~= LocalPlayer then
         player.CharacterAdded:Connect(function(char)
@@ -168,7 +256,7 @@ Players.PlayerAdded:Connect(function(player)
             local humanoid = char:WaitForChild("Humanoid", 5)
             if humanoid then
                 humanoid.Died:Connect(function()
-                    task.wait(Players.RespawnTime + 0.1) -- Wait for respawn
+                    task.wait(Players.RespawnTime + 0.5)  -- Increased wait for respawn
                     if player.Character then
                         addChams(player.Character)
                     end
@@ -176,6 +264,11 @@ Players.PlayerAdded:Connect(function(player)
             end
         end)
     end
+end)
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+    -- Reapply chams to others on local respawn
+    updateAllChams()
 end)
 
 for _, player in ipairs(Players:GetPlayers()) do
@@ -197,10 +290,87 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Toggle GUI with Right Shift
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == Enum.KeyCode.RightShift then
-        ScreenGui.Enabled = not ScreenGui.Enabled
-        -- print("GUI toggled:", ScreenGui.Enabled)
+-- Aimbot Logic
+local function isVisible(target)
+    if not visibleCheck then return true end
+    local origin = Camera.CFrame.Position
+    local direction = (target.Position - origin).Unit
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+    local result = workspace:Raycast(origin, direction * 500, raycastParams)
+    return result and result.Instance:IsDescendantOf(target.Parent)
+end
+
+local function canFire()
+    if not fireCheck then return true end
+    local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+    return tool and tool:FindFirstChild("Handle")  -- Simple check if tool equipped
+end
+
+local function getClosestEnemy()
+    local closest, dist = nil, math.huge
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character.Humanoid.Health > 0 then
+            local root = player.Character.HumanoidRootPart
+            local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
+            if onScreen then
+                local mouseDist = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
+                if mouseDist < dist and isVisible(root) then
+                    dist = mouseDist
+                    closest = root
+                end
+            end
+        end
+    end
+    return closest
+end
+
+RunService.RenderStepped:Connect(function()
+    if aimbotEnabled and canFire() then
+        local target = getClosestEnemy()
+        if target then
+            local smoothFactor = tonumber(SmoothInput.Text) or 0.5
+            if not smoothEnabled then smoothFactor = 1 end
+            local targetPos = target.Position
+            local currentCFrame = Camera.CFrame
+            local newCFrame = CFrame.lookAt(currentCFrame.Position, targetPos)
+            Camera.CFrame = currentCFrame:Lerp(newCFrame, smoothFactor)
+        end
     end
 end)
+
+-- Triggerbot (Raycast to mouse, check if hits chams-highlighted enemy)
+RunService.RenderStepped:Connect(function()
+    if triggerbotEnabled and canFire() then
+        local unitRay = Mouse.UnitRay
+        local raycastParams = RaycastParams.new()
+        raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
+        raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+        local result = workspace:Raycast(unitRay.Origin, unitRay.Direction * 500, raycastParams)
+        if result and result.Instance and result.Instance.Parent:FindFirstChildOfClass("Highlight") then
+            -- Assuming highlight means enemy with chams
+            mouse1press()
+            task.wait(0.05)
+            mouse1release()
+        end
+    end
+end)
+
+-- Keybinds
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.RightShift then
+        ScreenGui.Enabled = not ScreenGui.Enabled
+    elseif input.KeyCode == Enum.KeyCode.F1 then
+        bhEnabled = not bhEnabled
+        BunnyhopToggle.Text = "Bunnyhop: " .. (bhEnabled and "On" or "Off") .. " (F1)"
+    elseif input.KeyCode == Enum.KeyCode.F2 then
+        aimbotEnabled = not aimbotEnabled
+        AimbotToggle.Text = "Aimbot: " .. (aimbotEnabled and "On" or "Off") .. " (F2)"
+    elseif input.KeyCode == Enum.KeyCode.F3 then
+        triggerbotEnabled = not triggerbotEnabled
+        TriggerbotToggle.Text = "Triggerbot: " .. (triggerbotEnabled and "On" or "Off") .. " (F3)"
+    end
+end)
+```
